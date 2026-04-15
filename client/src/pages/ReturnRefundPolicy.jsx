@@ -6,7 +6,7 @@ const ReturnRefundPolicy = () => {
       <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-2xl p-10 border border-green-100">
         {/* Header Section */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold text-green-700 mb-3 tracking-tight">
+          <h1 className="text-4xl font-extrabold text-primary mb-3 tracking-tight">
             Return & Refund Policy
           </h1>
           <p className="text-gray-600 text-lg">
@@ -17,7 +17,7 @@ const ReturnRefundPolicy = () => {
 
         {/* Section 1 */}
         <section className="mb-10">
-          <h2 className="text-2xl font-semibold text-green-700 mb-3">1. Returns</h2>
+          <h2 className="text-2xl font-semibold text-primary-dull mb-3">1. Returns</h2>
           <p className="text-gray-700 mb-4 leading-relaxed">
             We offer a <strong>7-day return window</strong> from the date you receive your order.
             To be eligible for a return, your item must be unused and in the same condition that you received it,
@@ -41,7 +41,7 @@ const ReturnRefundPolicy = () => {
 
         {/* Section 2 */}
         <section className="mb-10">
-          <h2 className="text-2xl font-semibold text-green-700 mb-3">2. Refunds</h2>
+          <h2 className="text-2xl font-semibold text-primary-dull mb-3">2. Refunds</h2>
           <p className="text-gray-700 mb-4 leading-relaxed">
             Once we receive your item, we will inspect it and notify you about your refund status. 
             If approved, your refund will be processed to your original payment method within{" "}
@@ -55,7 +55,7 @@ const ReturnRefundPolicy = () => {
 
         {/* Section 3 */}
         <section className="mb-10">
-          <h2 className="text-2xl font-semibold text-green-700 mb-3">3. Non-Returnable Items</h2>
+          <h2 className="text-2xl font-semibold text-primary-dull mb-3">3. Non-Returnable Items</h2>
           <ul className="list-disc list-inside text-gray-700 bg-green-50 p-4 rounded-lg border border-green-100">
             <li>Gift cards and digital downloads</li>
             <li>Customized or perishable items</li>
@@ -65,7 +65,7 @@ const ReturnRefundPolicy = () => {
 
         {/* Section 4 */}
         <section>
-          <h2 className="text-2xl font-semibold text-green-700 mb-3">4. Contact Us</h2>
+          <h2 className="text-2xl font-semibold text-primary-dull mb-3">4. Contact Us</h2>
           <p className="text-gray-700 leading-relaxed">
             If you have any questions about our Return & Refund Policy, reach out to us anytime at{" "}
             <a

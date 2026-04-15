@@ -22,6 +22,10 @@ import ProductList from './pages/seller/ProductList'
 import Orders from './pages/seller/Orders'
 import Loading from './components/Loading'
 import ReturnRefundPolicy from './pages/ReturnRefundPolicy'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import ShippingPolicy from './pages/ShippingPolicy'
+import CancellationPolicy from './pages/CancellationPolicy'
+
 
 const App = () => {
   const location = useLocation();
@@ -50,7 +54,12 @@ const App = () => {
           <Route path="/add-address" element={<AddAddress />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/loader" element={<Loading />} />
+          {/* Policies */}
           <Route path="/return-refund-policy" element={<ReturnRefundPolicy />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/shipping-policy" element={<ShippingPolicy />} />
+          <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+
           <Route path='/seller' element={isSeller ? <SellerLayout /> : <SellerLogin />} >
             <Route index element={isSeller ? <AddProducts /> : null } />
             <Route path='product-list' element={<ProductList />} />

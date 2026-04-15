@@ -37,7 +37,8 @@ const Navbar = () => {
 
 
             <NavLink to="/" onClick={()=>setOpen(false)}>
-                <img className="h-9" src={assets.logo} alt="logo" />
+                <img className="h-12 md:h-13 w-auto object-contain scale-235" 
+                src={assets.logo} alt="logo" />
             </NavLink>
 
             {/* Desktop Menu */}

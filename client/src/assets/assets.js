@@ -1,4 +1,4 @@
-import logo from "./logo.svg";
+import logo from "./logo1.svg";
 import search_icon from "./search_icon.svg";
 import remove_icon from "./remove_icon.svg";
 import arrow_right_icon_colored from "./arrow_right_icon_colored.svg";
@@ -20,7 +20,7 @@ import box_icon from "./box_icon.svg";
 import trust_icon from "./trust_icon.svg";
 import black_arrow_icon from "./black_arrow_icon.svg";
 import white_arrow_icon from "./white_arrow_icon.svg";
-import main_banner_bg from "./main_banner_bg.png";
+import main_banner_bg1 from "./main_banner_bg1.png";
 import main_banner_bg_sm from "./main_banner_bg_sm.png";
 import bottom_banner_image from "./bottom_banner_image.png";
 import bottom_banner_image_sm from "./bottom_banner_image_sm.png";
@@ -93,7 +93,7 @@ export const assets = {
   trust_icon,
   black_arrow_icon,
   white_arrow_icon,
-  main_banner_bg,
+  main_banner_bg1,
   main_banner_bg_sm,
   bottom_banner_image,
   bottom_banner_image_sm,
@@ -164,11 +164,11 @@ export const footerLinks = [
   {
     title: "Need help?",
     links: [
-      { text: "Delivery Information", url: "#" },
+      { text: "Privacy Policy", url: "/privacy-policy" },
       { text: "Return & Refund Policy", url: "/return-refund-policy" },
-      { text: "Payment Methods", url: "#" },
+      { text: "Shipping Policy", url: "/shipping-policy" },
       { text: "Track your Order", url: "#" },
-      { text: "Contact Us", url: "#" },
+      { text: "Cancellation Policy", url: "/cancellation-policy" },
     ],
   },
   {
