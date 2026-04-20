@@ -67,10 +67,10 @@ const ShippingPolicy = () => {
           <p className="text-gray-700 leading-relaxed">
             For any shipping-related queries, feel free to contact us at{" "}
             <a
-              href="mailto:pujashri03@gmail.com"
+              href="mailto:pujadecor2025@gmail.com"
               className="text-green-700 font-semibold hover:underline"
             >
-              pujashri03@gmail.com
+              pujadecor2025@gmail.com
             </a>
             .
           </p>

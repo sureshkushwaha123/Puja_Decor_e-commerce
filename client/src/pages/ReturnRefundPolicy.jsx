@@ -28,10 +28,10 @@ const ReturnRefundPolicy = () => {
             <li>
               Contact our support team at{" "}
               <a
-                href="mailto:pujashri03@gmail.com"
+                href="mailto:pujadecor2025@gmail.com"
                 className="text-green-700 font-semibold hover:underline"
               >
-                pujashri03@gmail.com
+                pujadecor2025@gmail.com
               </a>.
             </li>
             <li>Provide your order number and details about the item you wish to return.</li>
@@ -69,10 +69,10 @@ const ReturnRefundPolicy = () => {
           <p className="text-gray-700 leading-relaxed">
             If you have any questions about our Return & Refund Policy, reach out to us anytime at{" "}
             <a
-              href="mailto:pujashri03@gmail.com"
+              href="mailto:pujadecor2025@gmail.com"
               className="text-green-700 font-semibold hover:underline"
             >
-              pujashri03@gmail.com
+              pujadecor2025@gmail.com
             </a>
             . We’re always happy to help you.
           </p>
