@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import Product from "../models/product.js";
+import Product from "../models/Product.js";
 
 
 
