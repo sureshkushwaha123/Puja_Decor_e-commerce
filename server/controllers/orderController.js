@@ -1,9 +1,96 @@
 
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import Razorpay from "razorpay";
+import crypto from "node:crypto";
 
 //importing stripe from its package which we already installed during backend setup
 import Stripe from "stripe";
+
+const getRazorpay = () => {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        throw new Error("Razorpay credentials are not configured");
+    }
+    return new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+};
+
+// Create a pending application order and its Razorpay order.
+export const createRazorpayOrder = async (req, res) => {
+    try {
+        const { items, address } = req.body;
+        if (!address || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, message: "Invalid order data" });
+        }
+
+        let amount = 0;
+        for (const item of items) {
+            if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+                return res.status(400).json({ success: false, message: "Invalid item quantity" });
+            }
+            const product = await Product.findById(item.product);
+            if (!product) return res.status(400).json({ success: false, message: "Product not found" });
+            amount += product.offerPrice * item.quantity;
+        }
+        amount += Math.floor(amount * 0.02);
+        const amountInPaise = Math.round(amount * 100);
+        if (amountInPaise < 100) {
+            return res.status(400).json({ success: false, message: "Order amount must be at least 100 paise" });
+        }
+
+        const order = await Order.create({
+            userId: req.userId, items, address, amount,
+            paymentType: "Online", status: "Payment Pending",
+        });
+        const razorpayOrder = await getRazorpay().orders.create({
+            amount: amountInPaise,
+            currency: "INR",
+            receipt: order._id.toString(),
+        });
+        order.razorpayOrderId = razorpayOrder.id;
+        await order.save();
+
+        return res.json({
+            success: true,
+            order_id: razorpayOrder.id,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
+        });
+    } catch (error) {
+        const status = error.statusCode === 401 || error.statusCode === 403 ? 401 : 500;
+        return res.status(status).json({ success: false, message: error.message || "Unable to create payment order" });
+    }
+};
+
+export const verifyRazorpayPayment = async (req, res) => {
+    try {
+        const { razorpay_payment_id: paymentId, razorpay_order_id: orderId, razorpay_signature: signature } = req.body;
+        if (!paymentId || !orderId || !signature) {
+            return res.status(400).json({ success: false, message: "Missing payment verification fields" });
+        }
+        const order = await Order.findOne({ razorpayOrderId: orderId, userId: req.userId });
+        if (!order) return res.status(400).json({ success: false, message: "Payment order not found" });
+
+        const expected = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .update(`${orderId}|${paymentId}`)
+            .digest("hex");
+        const expectedBuffer = Buffer.from(expected, "hex");
+        const signatureBuffer = Buffer.from(signature, "hex");
+        if (expectedBuffer.length !== signatureBuffer.length || !crypto.timingSafeEqual(expectedBuffer, signatureBuffer)) {
+            return res.status(400).json({ success: false, message: "Payment signature verification failed" });
+        }
+
+        order.isPaid = true;
+        order.status = "Placed";
+        await order.save();
+        return res.json({ success: true, message: "Payment verified" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message || "Unable to verify payment" });
+    }
+};
 
 // place order cod: /api/order/cod
 export const placeOrderCOD = async (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
-import { assets, dummyAddress } from "../assets/assets";
+import { assets } from "../assets/assets";
 import toast from "react-hot-toast";
 
 const Cart = () => {
@@ -15,6 +15,8 @@ const Cart = () => {
     getCartAmount,
     axios,
     user,
+    setUser,
+    setShowUserLogin,
     setCartItems,
   } = useAppContext();
 
@@ -23,6 +25,16 @@ const Cart = () => {
   const [showAddress, setShowAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentOptions, setPaymentOptions] = useState("COD");
+  const [isPaying, setIsPaying] = useState(false);
+
+  const loadRazorpay = () => new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
   const getCart = () => {
     const tempArray = [];
@@ -54,6 +66,11 @@ const Cart = () => {
 
   const placeOrder = async () => {
     // Integrate with backend checkout API later
+    if (!user) {
+      toast.error("Please sign in to continue with payment.");
+      setShowUserLogin(true);
+      return;
+    }
     try {
       if (!selectedAddress) {
         return toast.error("Please select a delivery address");
@@ -75,10 +92,11 @@ const Cart = () => {
         }else{
           toast.error(data.message); 
         }
-      }else{
-        //place order with online payment (stripe)
-        const { data } = await axios.post("/api/order/stripe", {
-          // userId: user._id,
+      } else {
+        setIsPaying(true);
+        const loaded = await loadRazorpay();
+        if (!loaded) throw new Error("Unable to load Razorpay checkout. Please try again.");
+        const { data } = await axios.post("/api/order/razorpay/create-order", {
           items: cartArray.map(item => ({
             product: item._id,
             quantity: item.quantity
@@ -86,13 +104,60 @@ const Cart = () => {
           address: selectedAddress._id,
         })
         if (data.success) {
-         window.location.replace(data.url); //redirect to stripe checkout page
-        }else{
-          toast.error(data.message); 
+          const checkout = new window.Razorpay({
+            key: data.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID,
+            order_id: data.order_id,
+            amount: data.amount,
+            currency: data.currency,
+            name: "Puja Decor",
+            description: "Order payment",
+            handler: async (response) => {
+              try {
+                const verification = await axios.post("/api/order/razorpay/verify-payment", response);
+                if (!verification.data.success) throw new Error(verification.data.message);
+                toast.success("Payment successful");
+                setCartItems({});
+                navigate("/my-orders");
+              } catch (error) {
+                if (error.response?.status === 401 && error.response?.data?.code?.startsWith("AUTH_")) {
+                  setUser(null);
+                  setShowUserLogin(true);
+                  toast.error("Your session expired. Please sign in again.");
+                  return;
+                }
+                toast.error(error.response?.data?.message || error.message || "Payment verification failed");
+              } finally {
+                setIsPaying(false);
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                toast("Payment cancelled");
+                setIsPaying(false);
+              },
+            },
+            prefill: { name: user?.name, email: user?.email },
+            theme: { color: "#15803d" },
+          });
+          checkout.on("payment.failed", (event) => {
+            toast.error(event.error?.description || "Payment failed. Please try again.");
+            setIsPaying(false);
+          });
+          checkout.open();
+        } else {
+          setIsPaying(false);
+          toast.error(data.message);
         }
       }
     } catch (error) {
-      toast.error(error.message);
+      setIsPaying(false);
+      if (error.response?.status === 401 && error.response?.data?.code?.startsWith("AUTH_")) {
+        setUser(null);
+        setShowUserLogin(true);
+        toast.error("Your session expired. Please sign in again.");
+        return;
+      }
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -308,7 +373,7 @@ const Cart = () => {
             className="w-full border border-gray-300 bg-white px-3 py-2 mt-2 rounded-md outline-none"
           >
             <option value="COD">Cash On Delivery</option>
-            <option value="Online">Online Payment</option>
+            <option value="Online">Razorpay Online Payment</option>
           </select>
         </div>
 
@@ -344,9 +409,10 @@ const Cart = () => {
 
         <button
           onClick={placeOrder}
+          disabled={isPaying}
           className="w-full mt-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-primary-dull transition cursor-pointer"
         >
-          {paymentOptions === "COD" ? "Place Order" : "Proceed to Pay"}
+          {isPaying ? "Opening Checkout…" : paymentOptions === "COD" ? "Place Order" : "Proceed to Pay"}
         </button>
       </div>
     </div>
