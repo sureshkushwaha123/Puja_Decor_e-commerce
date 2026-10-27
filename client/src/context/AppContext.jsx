@@ -7,7 +7,8 @@ import axios from "axios"
 axios.defaults.withCredentials=true;
 const configuredBackendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 const localHostnames = ["localhost", "127.0.0.1"];
-axios.defaults.baseURL = import.meta.env.DEV && localHostnames.includes(window.location.hostname)
+// In production, Vercel proxies /api to the backend on this site's origin so auth cookies remain first-party.
+axios.defaults.baseURL = import.meta.env.PROD || (import.meta.env.DEV && localHostnames.includes(window.location.hostname))
   ? ""
   : configuredBackendUrl;
 

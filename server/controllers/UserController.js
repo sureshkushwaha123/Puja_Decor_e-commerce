@@ -2,6 +2,13 @@ import User from "../models/User.js";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+const authCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+    path: '/api',
+};
+
 
 //Register User: /api/users/register
 
@@ -31,11 +38,9 @@ export const register = async (req, res) => {
 
         
         res.cookie('token', token, {
-            httpOnly: true, //prevent js to access cookie
-            secure: process.env.NODE_ENV === 'production', //cookie only sent in production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', //prevent from CSRF
-            maxAge: 7 * 24 * 60 * 60 * 1000 //7 days cookie expiry  
-        })
+            ...authCookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000 //7 days cookie expiry
+        });
 
         return res.json({success:true, message:"User registered successfully", user:{email:user.email, name:user.name}});
 
@@ -69,11 +74,9 @@ export const login = async (req, res) => {
         const token = jwt.sign({id:user._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
 
         res.cookie('token', token, {
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict', 
-            maxAge: 7 * 24 * 60 * 60 * 1000   
-        })
+            ...authCookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
 
         return res.json({success:true, message:"User logged in successfully", user:{email:user.email, name:user.name}});
     } catch (error) {
@@ -102,11 +105,7 @@ export const isAuth = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-        });
+        res.clearCookie('token', authCookieOptions);
         return res.json({success:true, message:"logged out successfully"});
     } catch (error) {
         console.error(error.message);
