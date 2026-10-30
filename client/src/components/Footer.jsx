@@ -10,7 +10,7 @@ const Footer = () => {
                 <div>
                     <img className="w-34 md:w-32" src={assets.logo} alt="Logo" />
                     <p className="max-w-[410px] mt-6">
-                       Puja Decore — Beautifying your spaces, one divine touch at a time. 
+                       Puja Decor — Beautifying your spaces, one divine touch at a time. 
                        Delivered with devotion • Designed to inspire.
                     </p>
                 </div>
@@ -30,7 +30,7 @@ const Footer = () => {
                 </div>
             </div>
             <p className="py-4 text-center text-sm md:text-base text-gray-500/80">
-                Copyright {new Date().getFullYear()} © PujaDecore All Right Reserved.
+                Copyright {new Date().getFullYear()} © PujaDecor All Right Reserved.
             </p>
         </div>
     );

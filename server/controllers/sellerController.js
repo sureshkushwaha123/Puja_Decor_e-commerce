@@ -1,35 +1,9 @@
-import jwt from 'jsonwebtoken';
-
 const sellerCookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
     path: '/api',
 };
-
-// seller login: /api/seller/login
-
-export const sellerLogin = async (req, res) => {
-
-    try {
-        const {email, password} = req.body;    
-    if (email === process.env.SELLER_EMAIL && password === process.env.SELLER_PASSWORD) {
-        const token = jwt.sign({email}, process.env.JWT_SECRET, {expiresIn:'7d'});
-        res.cookie('sellerToken', token, {
-            ...sellerCookieOptions,
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
-        return res.json({success:true, message:" logged in successfully"});
-    } else {
-        return  res.json({success:false, message:"Invalid  Credentials"
-        })
-    }
-    } catch (error) {
-        console.error(error.message);
-        return res.json({success:false, message:error.message});
-    }
-}
-
 
 //seller isAuth : /api/seller/is-auth
 

@@ -136,18 +136,6 @@ export const categories = [
     image: hand_made_image,
     bgColor: "#FEE6CD",
   },
-  {
-    text: "Bakery & Breads",
-    path: "Bakery",
-    image: bakery_image,
-    bgColor: "#E0F6FE",
-  },
-  {
-    text: "Grains & Cereals",
-    path: "Grains",
-    image: grain_image,
-    bgColor: "#F1E3F9",
-  },
 ];
 
 export const footerLinks = [

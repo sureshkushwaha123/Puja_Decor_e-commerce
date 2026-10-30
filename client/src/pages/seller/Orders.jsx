@@ -56,8 +56,9 @@ const Orders = () => {
           <p className="text-black/80">
             {order.address.firstName} {order.address.lastName}
           </p>
-          <p>{order.address.street}, {order.address.city}</p>
-          <p>{order.address.state}, {order.address.zipcode}, {order.address.country}</p>
+          {order.address.addressType && <p>{order.address.addressType} address</p>}
+          <p>{[order.address.flatHouseNo, order.address.street, order.address.landmark].filter(Boolean).join(', ')}</p>
+          <p>{[order.address.city, order.address.state, order.address.zipCode ?? order.address.zipcode, order.address.country].filter(Boolean).join(', ')}</p>
           <p>{order.address.phone}</p>
         </>
       ) : (

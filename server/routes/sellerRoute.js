@@ -1,14 +1,14 @@
 
 
 import express from 'express';
-import { isSellerAuth, sellerLogin, sellerLogout } from '../controllers/sellerController.js';
+import { isSellerAuth, sellerLogout } from '../controllers/sellerController.js';
+import { requestStaffOtp, verifyStaffOtp } from '../controllers/UserController.js';
 import authSeller from '../middlewares/authSeller.js';
 
 const sellerRouter = express.Router();
 
-// Define your seller routes here
-
-sellerRouter.post('/login', sellerLogin );
+sellerRouter.post('/otp/request', requestStaffOtp);
+sellerRouter.post('/otp/verify', verifyStaffOtp);
 sellerRouter.get('/is-auth', authSeller, isSellerAuth );
 sellerRouter.get('/logout',  sellerLogout );
 

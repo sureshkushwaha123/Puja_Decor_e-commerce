@@ -13,6 +13,7 @@ import orderRouter from './routes/orderRoute.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
+app.set('trust proxy', 1);
 
 await connectDB();
 await connectCloudinary();

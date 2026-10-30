@@ -326,7 +326,16 @@ const Cart = () => {
           <div className="relative mt-2 text-sm text-gray-500">
             <p>
               {selectedAddress
-                ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.country}`
+                ? [
+                    `${selectedAddress.firstName || ''} ${selectedAddress.lastName || ''}`.trim(),
+                    selectedAddress.flatHouseNo,
+                    selectedAddress.street,
+                    selectedAddress.landmark,
+                    selectedAddress.city,
+                    selectedAddress.state,
+                    selectedAddress.zipCode ?? selectedAddress.zipcode,
+                    selectedAddress.country,
+                  ].filter(Boolean).join(', ')
                 : "No address found"}
             </p>
             <button
@@ -340,17 +349,17 @@ const Cart = () => {
           {showAddress && (
             <div className="mt-3 border border-gray-200 rounded-lg bg-white shadow-sm text-sm">
               {addresses.map((address, index) => (
-                <p
+                <button
                   key={index}
                   onClick={() => {
                     setSelectedAddress(address);
                     setShowAddress(false);
                   }}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  className="block w-full p-3 text-left hover:bg-gray-100 cursor-pointer"
                 >
-                  {address.street}, {address.city}, {address.state},{" "}
-                  {address.country}
-                </p>
+                  <span className="mb-1 block font-medium text-gray-700">{address.firstName} {address.lastName} · {address.addressType || 'Saved address'}</span>
+                  <span className="block">{[address.flatHouseNo, address.street, address.landmark, address.city, address.state, address.zipCode ?? address.zipcode, address.country].filter(Boolean).join(', ')}</span>
+                </button>
               ))}
               <p
                 onClick={() => navigate("/add-address")}
