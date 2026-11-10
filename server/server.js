@@ -18,11 +18,27 @@ app.set('trust proxy', 1);
 await connectDB();
 await connectCloudinary();
 
-// Allow deployed frontend origins and local Vite ports during development.
-const allowedOrigins = ['https://pujadecor.vercel.app'];
+// Allow the production custom domain, its canonical www host, the Vercel
+// preview hostname, and any explicitly configured frontend origin.
+const configuredFrontendOrigins = [
+    process.env.FRONTEND_URL,
+    ...(process.env.FRONTEND_URLS || '').split(','),
+].map((value) => {
+    try {
+        return value?.trim() ? new URL(value.trim()).origin : null;
+    } catch {
+        return null;
+    }
+}).filter(Boolean);
+const allowedOrigins = new Set([
+    'https://pujadecor.in',
+    'https://www.pujadecor.in',
+    'https://pujadecor.vercel.app',
+    ...configuredFrontendOrigins,
+]);
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        if (!origin || allowedOrigins.has(origin)) return callback(null, true);
         if (process.env.NODE_ENV !== 'production') {
             try {
                 const { hostname, protocol } = new URL(origin);
@@ -33,7 +49,9 @@ const corsOptions = {
                 // Reject malformed origins below.
             }
         }
-        return callback(new Error('Origin is not allowed by CORS'));
+        const error = new Error('Origin is not allowed by CORS');
+        error.status = 403;
+        return callback(error);
     },
     credentials: true,
 };
@@ -42,6 +60,12 @@ const corsOptions = {
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(corsOptions));
+app.use((error, req, res, next) => {
+    if (error?.message === 'Origin is not allowed by CORS') {
+        return res.status(403).json({success:false, message:'Origin is not allowed'});
+    }
+    return next(error);
+});
 
 app.get('/', (req, res) => res.send("API is running..."));
 app.use('/api/user', userRouter);

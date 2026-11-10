@@ -28,6 +28,18 @@ const genericOtpMessage = "If the account is eligible, a verification code has b
 const maxEmailOtpRequestsPerHour = 5;
 const maxIpOtpRequestsPerHour = 30;
 
+const logOtpFailure = (label, error) => {
+    if (Number.isInteger(error?.providerStatus)) {
+        console.error(label, {
+            provider:'Resend',
+            status:error.providerStatus,
+            code:error.providerCode || 'unknown',
+        });
+        return;
+    }
+    console.error(label, error?.message || 'Unknown OTP error');
+};
+
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const findUserByEmail = (email) => User.findOne({
@@ -195,7 +207,7 @@ export const requestCustomerOtp = async (req, res) => {
             message:mode === 'signup' ? 'Verification code sent. Verify your email to create your account.' : 'Verification code sent.',
         });
     } catch (error) {
-        console.error('Customer OTP request failed:', error.message);
+        logOtpFailure('Customer OTP request failed:', error);
         return res.status(503).json({success:false, message:'Email delivery is temporarily unavailable'});
     }
 };
@@ -261,7 +273,7 @@ export const requestStaffOtp = async (req, res) => {
 
         return res.json({success:true, message:genericOtpMessage});
     } catch (error) {
-        console.error('Staff OTP request failed:', error.message);
+        logOtpFailure('Staff OTP request failed:', error);
         return res.status(503).json({success:false, message:'Email delivery is temporarily unavailable'});
     }
 };
