@@ -75,11 +75,11 @@ const ProductDetails = () => {
                     </ul>
 
                     <div className="flex items-center mt-10 gap-4 text-base">
-                        <button onClick={()=> addToCart(product._id)} className="w-full py-3.5 cursor-pointer font-medium bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition" >
-                            Add to Cart
+                        <button disabled={!product.inStock} onClick={()=> addToCart(product._id)} className="w-full py-3.5 cursor-pointer font-medium bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-gray-100" >
+                            {product.inStock ? 'Add to Cart' : 'Out of stock'}
                         </button>
-                        <button onClick={()=> {addToCart(product._id); navigate('/cart')}} className="w-full py-3.5 cursor-pointer font-medium bg-primary text-white hover:bg-primary-dull transition" >
-                            Buy now
+                        <button disabled={!product.inStock} onClick={()=> {addToCart(product._id); navigate('/cart')}} className="w-full py-3.5 cursor-pointer font-medium bg-primary text-white hover:bg-primary-dull transition disabled:cursor-not-allowed disabled:bg-gray-300" >
+                            {product.inStock ? 'Buy now' : 'Unavailable'}
                         </button>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ const ProductDetails = () => {
                     <div className='w-20 h-0.5 bg bg-primary rounded-full mt-2'></div>
                 </div>
                 <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-6 lg:grid-cols-5 mt-6 w-full'>
-                    {relatedProducts.filter((product)=>product.inStock).map((product,index)=>(
+                    {relatedProducts.map((product,index)=>(
                         <ProductCard key={index} product={product} />
                     ))}
                 </div>

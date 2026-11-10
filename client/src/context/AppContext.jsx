@@ -1,6 +1,5 @@
 import { createContext,useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { dummyProducts } from "../assets/assets";
 import toast from "react-hot-toast";
 import axios from "axios"
 
@@ -34,11 +33,14 @@ export const AppContextProvider = ({ children }) => {
         const {data}=await axios.get('/api/seller/is-auth');
         if(data.success){
           setIsSeller(true);
+          return true;
         }else{
           setIsSeller(false);
+          return false;
         }
       } catch (error) {
         setIsSeller(false);
+        return false;
       }
     }
 

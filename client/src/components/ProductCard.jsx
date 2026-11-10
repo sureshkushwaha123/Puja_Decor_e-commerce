@@ -45,11 +45,11 @@ const ProductCard = ({ product }) => {
           <div onClick={(e)=>{e.stopPropagation();}} className="text-primary">
             {!cartItems?.[product?._id] ? (
               <button
-                className="flex items-center justify-center gap-1 bg-primary/10 border border-primary/40 md:w-[80px] w-[64px] h-[34px] rounded cursor-pointer "
+                disabled={!product.inStock}
+                className="flex items-center justify-center gap-1 bg-primary/10 border border-primary/40 md:w-[90px] w-[72px] h-[34px] rounded cursor-pointer disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
                 onClick={() => addToCart(product._id)}
               >
-                <img src={assets.cart_icon} alt="cart_icon" />
-                Add
+                {product.inStock ? <><img src={assets.cart_icon} alt="" /> Add</> : 'Out of stock'}
               </button>
             ) : (
               <div className="flex items-center justify-center gap-2 md:w-20 w-16 h-[34px] bg-primary/25 rounded select-none">
@@ -62,7 +62,8 @@ const ProductCard = ({ product }) => {
                 <span className="w-5 text-center">{cartItems[product._id]}</span>
                 <button
                   onClick={() =>{addToCart(product._id);}}
-                  className="cursor-pointer text-md px-2 h-full"
+                  disabled={!product.inStock}
+                  className="cursor-pointer text-md px-2 h-full disabled:cursor-not-allowed disabled:text-gray-400"
                 >
                   +
                 </button>

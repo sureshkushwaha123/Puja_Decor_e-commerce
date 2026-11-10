@@ -18,6 +18,7 @@ const Cart = () => {
     setUser,
     setShowUserLogin,
     setCartItems,
+    fetchProducts,
   } = useAppContext();
 
   const [cartArray, setCartArray] = useState([]);
@@ -88,6 +89,7 @@ const Cart = () => {
         if (data.success) {
           toast.success(data.message);
           setCartItems({});
+          await fetchProducts();
           navigate("/my-orders");
         }else{
           toast.error(data.message); 
@@ -117,6 +119,7 @@ const Cart = () => {
                 if (!verification.data.success) throw new Error(verification.data.message);
                 toast.success("Payment successful");
                 setCartItems({});
+                await fetchProducts();
                 navigate("/my-orders");
               } catch (error) {
                 if (error.response?.status === 401 && error.response?.data?.code?.startsWith("AUTH_")) {

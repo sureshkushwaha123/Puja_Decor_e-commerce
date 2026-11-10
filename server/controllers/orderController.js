@@ -7,6 +7,82 @@ import crypto from "node:crypto";
 //importing stripe from its package which we already installed during backend setup
 import Stripe from "stripe";
 
+const prepareOrderItems = async (items) => {
+    if (!Array.isArray(items) || items.length === 0) throw new Error("Invalid order data");
+    const quantities = new Map();
+    for (const item of items) {
+        if (!item?.product || !Number.isInteger(item.quantity) || item.quantity < 1) {
+            throw new Error("Invalid item quantity");
+        }
+        const id = String(item.product);
+        quantities.set(id, (quantities.get(id) || 0) + item.quantity);
+    }
+
+    const products = await Product.find({_id:{$in:[...quantities.keys()]}});
+    const productById = new Map(products.map((product) => [product._id.toString(), product]));
+    const normalizedItems = [];
+    for (const [id, quantity] of quantities) {
+        const product = productById.get(id);
+        if (!product || product.status === "Archived") throw new Error("One or more products are unavailable");
+        if (Number.isInteger(product.stockQuantity) && product.stockQuantity < quantity) {
+            throw new Error(`${product.name} does not have enough stock`);
+        }
+        if (!Number.isInteger(product.stockQuantity) && !product.inStock) {
+            throw new Error(`${product.name} is out of stock`);
+        }
+        normalizedItems.push({
+            product:product._id,
+            quantity,
+            unitPrice:product.offerPrice,
+            productName:product.name,
+            productImage:product.image?.[0] || "",
+        });
+    }
+    return normalizedItems;
+};
+
+// Reserve tracked inventory atomically per product. Legacy listings continue
+// to use their existing inStock flag because they have no recorded quantity.
+const reserveInventory = async (items) => {
+    const reserved = [];
+    try {
+        for (const item of items) {
+            const product = await Product.findById(item.product).select("name status stockQuantity inStock");
+            if (!product || product.status === "Archived") throw new Error("One or more products are unavailable");
+            if (!Number.isInteger(product.stockQuantity)) {
+                if (!product.inStock) throw new Error(`${product.name} is out of stock`);
+                continue;
+            }
+            const updated = await Product.findOneAndUpdate(
+                {_id:item.product, status:{$ne:"Archived"}, stockQuantity:{$gte:item.quantity}},
+                {$inc:{stockQuantity:-item.quantity}},
+                {new:true}
+            );
+            if (!updated) throw new Error(`${product.name} does not have enough stock`);
+            reserved.push(item);
+            if (updated.stockQuantity === 0) {
+                await Product.updateOne({_id:item.product, stockQuantity:0}, {$set:{inStock:false}});
+            }
+        }
+        return reserved;
+    } catch (error) {
+        await restoreInventory(reserved);
+        throw error;
+    }
+};
+
+const restoreInventory = async (items) => {
+    for (const item of items) {
+        await Product.updateOne({_id:item.product}, {$inc:{stockQuantity:item.quantity}, $set:{inStock:true}});
+    }
+};
+
+const getOrderAmounts = (items) => {
+    const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const taxAmount = Math.floor(subtotal * 0.02);
+    return {subtotal, taxAmount, amount:subtotal + taxAmount};
+};
+
 const getRazorpay = () => {
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
         throw new Error("Razorpay credentials are not configured");
@@ -21,27 +97,18 @@ const getRazorpay = () => {
 export const createRazorpayOrder = async (req, res) => {
     try {
         const { items, address } = req.body;
-        if (!address || !Array.isArray(items) || items.length === 0) {
+        if (!address) {
             return res.status(400).json({ success: false, message: "Invalid order data" });
         }
-
-        let amount = 0;
-        for (const item of items) {
-            if (!Number.isInteger(item.quantity) || item.quantity < 1) {
-                return res.status(400).json({ success: false, message: "Invalid item quantity" });
-            }
-            const product = await Product.findById(item.product);
-            if (!product) return res.status(400).json({ success: false, message: "Product not found" });
-            amount += product.offerPrice * item.quantity;
-        }
-        amount += Math.floor(amount * 0.02);
+        const normalizedItems = await prepareOrderItems(items);
+        const {subtotal, taxAmount, amount} = getOrderAmounts(normalizedItems);
         const amountInPaise = Math.round(amount * 100);
         if (amountInPaise < 100) {
             return res.status(400).json({ success: false, message: "Order amount must be at least 100 paise" });
         }
 
         const order = await Order.create({
-            userId: req.userId, items, address, amount,
+            userId: req.userId, items:normalizedItems, address, subtotal, taxAmount, amount,
             paymentType: "Online", status: "Payment Pending",
         });
         const razorpayOrder = await getRazorpay().orders.create({
@@ -59,7 +126,7 @@ export const createRazorpayOrder = async (req, res) => {
             currency: razorpayOrder.currency,
         });
     } catch (error) {
-        const status = error.statusCode === 401 || error.statusCode === 403 ? 401 : 500;
+        const status = error.statusCode === 401 || error.statusCode === 403 ? 401 : 400;
         return res.status(status).json({ success: false, message: error.message || "Unable to create payment order" });
     }
 };
@@ -83,9 +150,24 @@ export const verifyRazorpayPayment = async (req, res) => {
             return res.status(400).json({ success: false, message: "Payment signature verification failed" });
         }
 
-        order.isPaid = true;
-        order.status = "Placed";
-        await order.save();
+        if (order.isPaid) return res.json({success:true, message:"Payment already verified"});
+        const verifyingOrder = await Order.findOneAndUpdate(
+            {_id:order._id, isPaid:false, status:"Payment Pending"},
+            {$set:{status:"Payment Verifying"}},
+            {new:true}
+        );
+        if (!verifyingOrder) return res.status(409).json({success:false, message:"This payment is already being verified"});
+
+        let reservedItems = [];
+        try {
+            reservedItems = await reserveInventory(order.items);
+            const result = await Order.updateOne({_id:order._id, status:"Payment Verifying"}, {$set:{isPaid:true, status:"Placed"}});
+            if (result.matchedCount !== 1) throw new Error("Unable to confirm this payment");
+        } catch (inventoryError) {
+            await restoreInventory(reservedItems);
+            await Order.updateOne({_id:order._id, status:"Payment Verifying"}, {$set:{status:"Payment Pending"}});
+            return res.status(409).json({success:false, message:inventoryError.message});
+        }
         return res.json({ success: true, message: "Payment verified" });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message || "Unable to verify payment" });
@@ -95,35 +177,28 @@ export const verifyRazorpayPayment = async (req, res) => {
 // place order cod: /api/order/cod
 export const placeOrderCOD = async (req, res) => {
     try {
-        const userId = req.userId; // ✅ From JWT middleware
+        const userId = req.userId;
         const { items, address } = req.body;
+        if (!address) return res.status(400).json({success:false, message:"Invalid order data"});
 
-        if (!address || items.length === 0) {
-            return res.json({success: false, message: "Invalid order data"});
-        } 
-        //cal amount using item
-
-        let amount = await items.reduce(async (acc, item) => {
-            const product = await Product.findById(item.product);
-            return (await acc) + product.offerPrice * item.quantity;
-        },0);
-
-        //add tax charge (2%)
-        amount += Math.floor(amount * 0.02);
-
-        await Order.create({userId, items, address, amount, paymentType:"COD", status:"Placed"});
-
+        const normalizedItems = await prepareOrderItems(items);
+        const amounts = getOrderAmounts(normalizedItems);
+        const reservedItems = await reserveInventory(normalizedItems);
+        try {
+            await Order.create({userId, items:normalizedItems, address, ...amounts, paymentType:"COD", status:"Placed"});
+        } catch (error) {
+            await restoreInventory(reservedItems);
+            throw error;
+        }
         return res.json({success:true, message:"Order placed successfully"});
     } catch (error) {
-        return res.json({success:false, message: error.message});
-        
+        return res.status(400).json({success:false, message:error.message});
     }
 }
-
 // place order stripe(online): /api/order/stripe (the payment used is stripe )
 export const placeOrderStripe = async (req, res) => {
     try {
-        const userId = req.userId; // ✅
+        const userId = req.userId; // âœ…
         const { items, address } = req.body;
 
         //from where the request is coming
@@ -219,7 +294,7 @@ export const getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find({ 
             $or:[{paymentType:"COD"}, {isPaid:true}]
-        }).populate('items.product address').sort({createdAt:-1});
+        }).populate('items.product address').populate('userId', 'name email').sort({createdAt:-1});
 
         return res.json({ success: true, orders });
     } catch (error) {

@@ -36,10 +36,9 @@ export const digestRateLimitKey = (kind, identity, bucket, secret = process.env.
         .digest('hex');
 };
 
-export const getStaffAccount = (email, env = process.env) => {
-    const normalizedEmail = normalizeEmail(email);
+export const getStaffAccounts = (env = process.env) => {
     const configured = String(env.STAFF_ACCOUNTS || '').split(',').map((item) => item.trim()).filter(Boolean);
-    const accounts = configured.map((item) => {
+    return configured.map((item) => {
         const separator = item.lastIndexOf(':');
         if (separator < 0) return null;
         const accountEmail = normalizeEmail(item.slice(0, separator));
@@ -47,9 +46,10 @@ export const getStaffAccount = (email, env = process.env) => {
         if (!isValidEmail(accountEmail) || !['seller', 'admin'].includes(role)) return null;
         return {email:accountEmail, roles:[role]};
     }).filter(Boolean);
-
-    return accounts.find((account) => account.email === normalizedEmail) || null;
 };
+
+export const getStaffAccount = (email, env = process.env) =>
+    getStaffAccounts(env).find((account) => account.email === normalizeEmail(email)) || null;
 
 export const staffTokenHasSellerAccess = (staffAccount, tokenRoles) =>
     Array.isArray(tokenRoles) && Boolean(staffAccount?.roles?.some((role) =>

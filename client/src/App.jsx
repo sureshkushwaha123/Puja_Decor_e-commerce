@@ -17,8 +17,9 @@ import AddAddress from './pages/AddAddress'
 import MyOrders from './pages/MyOrders'
 import SellerLogin from './components/seller/SellerLogin.jsx'
 import SellerLayout from './pages/seller/SellerLayout'
-import AddProducts from './pages/seller/AddProducts'
+import Dashboard from './pages/seller/Dashboard'
 import ProductList from './pages/seller/ProductList'
+import Inventory from './pages/seller/Inventory'
 import Orders from './pages/seller/Orders'
 import Loading from './components/Loading'
 import ReturnRefundPolicy from './pages/ReturnRefundPolicy'
@@ -61,8 +62,9 @@ const App = () => {
           <Route path="/cancellation-policy" element={<CancellationPolicy />} />
 
           <Route path='/seller' element={isSeller ? <SellerLayout /> : <SellerLogin />} >
-            <Route index element={isSeller ? <AddProducts /> : null } />
+            <Route index element={isSeller ? <Dashboard /> : null } />
             <Route path='product-list' element={<ProductList />} />
+            <Route path='inventory' element={<Inventory />} />
             <Route path='orders' element={<Orders />} />
           </Route>
         </Routes>

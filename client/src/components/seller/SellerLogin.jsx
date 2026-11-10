@@ -3,7 +3,7 @@ import { useAppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
 
 const SellerLogin = () => {
-    const {isSeller, setIsSeller, navigate, axios}=useAppContext();
+    const {isSeller, navigate, axios, fetchSeller}=useAppContext();
     const [email, setEmail]=useState('');
     const [code, setCode]=useState('');
     const [codeRequested, setCodeRequested]=useState(false);
@@ -33,8 +33,9 @@ const SellerLogin = () => {
     const verifyCode=async()=>{
         const {data}=await axios.post('/api/seller/otp/verify',{email,code});
         if(data.success){
-            setIsSeller(true);
-            navigate('/seller');
+            const sessionIsValid = await fetchSeller();
+            if (sessionIsValid) navigate('/seller');
+            else toast.error('Your seller session could not be verified. Please sign in again.');
         }else{
             toast.error(data.message);
         }
